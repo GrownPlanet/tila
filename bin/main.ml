@@ -14,4 +14,5 @@ let () =
     let filename = Sys.argv.(1) in
     match compile filename with
     | Error e -> Printf.eprintf "error: %s\n" e
-    | Ok ast -> List.iter (fun s -> Ast.statement_to_string s |> print_endline) ast
+    | Ok ast ->
+        List.iter (fun s -> Ast.statement_to_string s |> print_endline) ast

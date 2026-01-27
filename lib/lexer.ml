@@ -44,7 +44,6 @@ let rec lex_all input pos line tokens =
         else
           lex_all input (pos + 1) line ((Token.TString string, line) :: tokens)
     | _ ->
-        Error
-          (Printf.sprintf "unexpected character '%c' on line %d" char line)
+        Error (Printf.sprintf "unexpected character '%c' on line %d" char line)
 
 let lex input = lex_all input 0 1 []
