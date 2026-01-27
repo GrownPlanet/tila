@@ -1,1 +1,1 @@
-val parse : Token.t list -> Ast.statement list
+val parse : (Token.t * int) list -> (Ast.statement list, string) result

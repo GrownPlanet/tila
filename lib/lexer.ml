@@ -13,17 +13,18 @@ let match_keyword literal =
   | "global" -> Token.Global
   | _ -> Token.Id literal
 
-let rec lex_all input pos tokens =
+let rec lex_all input pos line tokens =
   if pos >= String.length input then List.rev tokens
   else
     let char = String.get input pos in
     match char with
-    | '\n' | ' ' | '\r' | '\t' -> lex_all input (pos + 1) tokens
-    | '=' -> lex_all input (pos + 1) (Token.Equal :: tokens)
-    | '{' -> lex_all input (pos + 1) (Token.LeftBrace :: tokens)
-    | '}' -> lex_all input (pos + 1) (Token.RightBrace :: tokens)
-    | '(' -> lex_all input (pos + 1) (Token.LeftParen :: tokens)
-    | ')' -> lex_all input (pos + 1) (Token.RightParen :: tokens)
+    | '\n' -> lex_all input (pos + 1) (line + 1) tokens
+    | ' ' | '\r' | '\t' -> lex_all input (pos + 1) line tokens
+    | '=' -> lex_all input (pos + 1) line ((Token.Equal, line) :: tokens)
+    | '{' -> lex_all input (pos + 1) line ((Token.LeftBrace, line) :: tokens)
+    | '}' -> lex_all input (pos + 1) line ((Token.RightBrace, line) :: tokens)
+    | '(' -> lex_all input (pos + 1) line ((Token.LeftParen, line) :: tokens)
+    | ')' -> lex_all input (pos + 1) line ((Token.RightParen, line) :: tokens)
     | 'a' .. 'z' | 'A' .. 'Z' ->
         let literal, pos =
           consume_while input pos (function
@@ -31,13 +32,19 @@ let rec lex_all input pos tokens =
             | _ -> false)
         in
         let token = match_keyword literal in
-        lex_all input pos (token :: tokens)
+        lex_all input pos line ((token, line) :: tokens)
     | '"' ->
-        let string, pos = consume_while input (pos + 1) (fun c -> c <> '"') in
+        let string, pos =
+          consume_while input (pos + 1) (fun c -> c <> '"' && c <> '\n')
+        in
         let strlen = String.length string in
         let string = String.sub string 0 (strlen - 1) in
-        if pos = String.length input then failwith "unclosed string literal"
-        else lex_all input (pos + 1) (Token.TString string :: tokens)
-    | _ -> failwith (Printf.sprintf "unexpected character: %c" char)
+        if pos = String.length input then
+          failwith (Printf.sprintf "unclosed string literal on line %d" line)
+        else
+          lex_all input (pos + 1) line ((Token.TString string, line) :: tokens)
+    | _ ->
+        failwith
+          (Printf.sprintf "unexpected character '%c' on line %d" char line)
 
-let lex input = lex_all input 0 []
+let lex input = lex_all input 0 1 []
