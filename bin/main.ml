@@ -9,4 +9,4 @@ let () =
       let tokens = Lexer.lex input in
       let ast = Parser.parse tokens in
       List.iter (fun s -> Ast.statement_to_string s |> print_endline) ast
-    with Failure s -> print_endline s
+    with Failure s -> Printf.printf "error: %s\n" s
