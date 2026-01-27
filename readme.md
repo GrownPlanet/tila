@@ -1,4 +1,4 @@
-# TIlang
+# TILang
 
 A simple, compiled language for the ti83+/ti84+.
 
