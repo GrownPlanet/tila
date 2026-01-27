@@ -20,10 +20,10 @@ let rec scan_all input pos tokens =
     match char with
     | '\n' | ' ' | '\r' | '\t' -> scan_all input (pos + 1) tokens
     | '=' -> scan_all input (pos + 1) (Token.Equal :: tokens)
-    | '{' -> scan_all input (pos + 1) (Token.RigthBrace :: tokens)
-    | '}' -> scan_all input (pos + 1) (Token.LeftBrace :: tokens)
-    | '(' -> scan_all input (pos + 1) (Token.RigthParen :: tokens)
-    | ')' -> scan_all input (pos + 1) (Token.LeftParen :: tokens)
+    | '{' -> scan_all input (pos + 1) (Token.LeftBrace :: tokens)
+    | '}' -> scan_all input (pos + 1) (Token.RigthBrace :: tokens)
+    | '(' -> scan_all input (pos + 1) (Token.LeftParen :: tokens)
+    | ')' -> scan_all input (pos + 1) (Token.RigthParen :: tokens)
     | 'a' .. 'z' | 'A' .. 'Z' ->
         let literal, pos =
           consume_while input pos (function
@@ -37,7 +37,7 @@ let rec scan_all input pos tokens =
         let strlen = String.length string in
         let string = String.sub string 0 (strlen - 1) in
         if pos = String.length input then failwith "unclosed string literal"
-        else scan_all input (pos + 1) (Token.String string :: tokens)
+        else scan_all input (pos + 1) (Token.TString string :: tokens)
     | _ -> failwith (Printf.sprintf "unexpected character: %c" char)
 
 let scan input = scan_all input 0 []
