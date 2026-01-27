@@ -6,22 +6,28 @@ This program compiles a program in a small language to assembly, which needs to 
 
 ## Running
 
-requirements:
+Requirements:
 
 - [OCaml](https://ocaml.org/)
+- [spasm-ng](https://github.com/alberthdev/spasm-ng), modify run.sh to use the location where you placed spasm-ng
+- the ti83+ include header (place it in `out/ti83plus.inc`)
+  - [on ticalc.org](https://www.ticalc.org/pub/83plus/asm/source/include/) (download `ti83plus.zip`)
+  - [on AsmPrgm in 28 days](https://taricorp.gitlab.io/83pa28d/lesson/week1/day01/index.html) (download `ti83plus.inc`)
+  - [on github/konaboy32/ti-asm](https://github.com/konaboy32/ti-asm/blob/master/includes/ti83plus.inc) (download the file)
 
-how to build: `dune build`
+How to build: `dune build`
 
-how to run: `dune exec tilang [program]`, `test.tp` is a small reference program you can use.
+How to run: `dune exec tilang [program]`, `test.tp` is a small reference program you can use.
 
 ## todo
 
-short term
+Short term:
+
 - [x] parse the program
 - [x] build an ast
 - [ ] generate the assembly
-- [ ] output the assembly
-- [ ] write a script to compile the assembly
+- [x] output the assembly
+- [x] write a script to compile the assembly
 - [ ] test it!
 - [ ] add more features
   - [ ] mutating variables
@@ -33,6 +39,7 @@ short term
   - [ ] more default functions: getkey, clearhome, ...
   - [ ] *advanced* math (*, /, ...; this is more difficult to implement on the ti84)
 
-long term
-- [ ] output byte code instead of assembly
+Long term:
+
+- [ ] output an executable instead of assembly
 - [ ] arguments for functions
