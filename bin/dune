@@ -1,0 +1,4 @@
+(executable
+ (public_name tilang)
+ (name main)
+ (libraries tilang))
