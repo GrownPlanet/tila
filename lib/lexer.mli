@@ -1,1 +1,1 @@
-val lex : Token.t list -> Ast.statement list
+val lex : string -> Token.t list

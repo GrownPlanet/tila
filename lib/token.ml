@@ -8,9 +8,9 @@ type t =
   | Id of string
   (* sepperators *)
   | LeftParen
-  | RigthParen
+  | RightParen
   | LeftBrace
-  | RigthBrace
+  | RightBrace
   (* opperators *)
   | Plus
   | Minus
@@ -24,9 +24,9 @@ let to_string token =
   | TString s -> Printf.sprintf "String %s" s
   | Id i -> Printf.sprintf "Id %s" i
   | LeftParen -> "LeftParen"
-  | RigthParen -> "RigthParen"
+  | RightParen -> "RightParen"
   | LeftBrace -> "LeftBrace"
-  | RigthBrace -> "RigthBrace"
+  | RightBrace -> "RightBrace"
   | Plus -> "Plus"
   | Minus -> "Minus"
   | Equal -> "Equal"

@@ -1,64 +1,43 @@
-let parse_function_call_args rest =
-  let rec aux rest acc =
-    match rest with
-    | Token.RigthParen :: r -> (List.rev acc, r)
-    | Token.TNumber num :: r -> aux r Ast.(Literal (LNumber num) :: acc)
-    | Token.TString str :: r -> aux r Ast.(Literal (LString str) :: acc)
-    | Token.Id id :: r -> aux r (Ast.Id id :: acc)
-    | _ -> failwith "unexpected token in function call"
+let consume_while input pos pred =
+  let len = String.length input in
+  let rec aux i acc =
+    if i < len && pred (String.get input i) then
+      aux (i + 1) (acc ^ String.make 1 (String.get input i))
+    else (acc, i)
   in
-  aux rest []
+  aux pos ""
 
-let rec parse_statement tokens =
-  match tokens with
-  | Token.Id id :: Token.LeftParen :: r ->
-      let args, r = parse_function_call_args r in
-      (Ast.FunctionCall { id; args }, r)
-  | Token.LeftBrace :: r ->
-      let statements, r = parse_block r in
-      (Ast.Block statements, r)
-  | Token.Global :: _ -> failwith "illegal global declaration"
-  | Token.Fn :: _ -> failwith "illegal function declaration"
-  | t :: _ -> invalid_arg ("unexpected token: " ^ Token.to_string t)
-  | [] -> invalid_arg "unexpected end of file"
+let match_keyword literal =
+  match literal with
+  | "fn" -> Token.Fn
+  | "global" -> Token.Global
+  | _ -> Token.Id literal
 
-and parse_block rest =
-  let rec aux rest acc =
-    match rest with
-    | Token.RigthBrace :: r -> (List.rev acc, r)
-    | _ ->
-        let statement, rest = parse_statement rest in
-        aux rest (statement :: acc)
-  in
-  aux rest []
+let rec lex_all input pos tokens =
+  if pos >= String.length input then List.rev tokens
+  else
+    let char = String.get input pos in
+    match char with
+    | '\n' | ' ' | '\r' | '\t' -> lex_all input (pos + 1) tokens
+    | '=' -> lex_all input (pos + 1) (Token.Equal :: tokens)
+    | '{' -> lex_all input (pos + 1) (Token.LeftBrace :: tokens)
+    | '}' -> lex_all input (pos + 1) (Token.RightBrace :: tokens)
+    | '(' -> lex_all input (pos + 1) (Token.LeftParen :: tokens)
+    | ')' -> lex_all input (pos + 1) (Token.RightParen :: tokens)
+    | 'a' .. 'z' | 'A' .. 'Z' ->
+        let literal, pos =
+          consume_while input pos (function
+            | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '1' -> true
+            | _ -> false)
+        in
+        let token = match_keyword literal in
+        lex_all input pos (token :: tokens)
+    | '"' ->
+        let string, pos = consume_while input (pos + 1) (fun c -> c <> '"') in
+        let strlen = String.length string in
+        let string = String.sub string 0 (strlen - 1) in
+        if pos = String.length input then failwith "unclosed string literal"
+        else lex_all input (pos + 1) (Token.TString string :: tokens)
+    | _ -> failwith (Printf.sprintf "unexpected character: %c" char)
 
-let parse_function_definition rest =
-  match rest with
-  | Token.Id id :: Token.LeftParen :: Token.RigthParen :: r ->
-      let content, r = parse_statement r in
-      (Ast.FunctionDefenition { id; content }, r)
-  | _ ->
-      failwith
-        "invalid function deffinition, keep in mind input variables aren't \
-         supported yet"
-
-let parse_global_assignment rest =
-  match rest with
-  | Token.Id id :: Token.Equal :: Token.TString value :: r ->
-      (Ast.GlobalAssignment { id; value = Ast.LString value }, r)
-  | Token.Id id :: Token.Equal :: Token.TNumber value :: r ->
-      (Ast.GlobalAssignment { id; value = Ast.LNumber value }, r)
-  | _ -> failwith "invalid global assignment"
-
-let rec aux tokens acc =
-  match tokens with
-  | Token.Global :: r ->
-      let statement, r = parse_global_assignment r in
-      aux r (statement :: acc)
-  | Token.Fn :: r ->
-      let statement, r = parse_function_definition r in
-      aux r (statement :: acc)
-  | [] -> List.rev acc
-  | t :: _ -> invalid_arg ("unexpected token: " ^ Token.to_string t)
-
-let lex tokens = aux tokens []
+let lex input = lex_all input 0 []
