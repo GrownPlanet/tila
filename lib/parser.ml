@@ -1,3 +1,5 @@
+let ( let* ) = Result.bind
+
 let raise_parse_error token place line =
   Error
     (Printf.sprintf "unexpected '%s' in %s on line %d" (Token.to_string token)
@@ -17,14 +19,12 @@ let parse_function_call_args rest =
 
 let rec parse_statement tokens =
   match tokens with
-  | (Token.Id id, _) :: (Token.LeftParen, _) :: r -> (
-      match parse_function_call_args r with
-      | Ok (args, r) -> Ok (Ast.FunctionCall { id; args }, r)
-      | Error e -> Error e)
-  | (Token.LeftBrace, _) :: r -> (
-      match parse_block r with
-      | Ok (statements, r) -> Ok (Ast.Block statements, r)
-      | Error e -> Error e)
+  | (Token.Id id, _) :: (Token.LeftParen, _) :: r ->
+      let* args, r = parse_function_call_args r in
+      Ok (Ast.FunctionCall { id; args }, r)
+  | (Token.LeftBrace, _) :: r ->
+      let* statements, r = parse_block r in
+      Ok (Ast.Block statements, r)
   | (t, line) :: _ -> raise_parse_error t "statement" line
   | [] -> Error "unexpected end of file"
 
@@ -32,19 +32,17 @@ and parse_block rest =
   let rec aux rest acc =
     match rest with
     | (Token.RightBrace, _) :: r -> Ok (List.rev acc, r)
-    | _ -> (
-        match parse_statement rest with
-        | Ok (statement, rest) -> aux rest (statement :: acc)
-        | Error e -> Error e)
+    | _ -> 
+        let* statement, rest = parse_statement rest in
+        aux rest (statement :: acc)
   in
   aux rest []
 
 let parse_function_definition rest =
   match rest with
-  | (Token.Id id, _) :: (Token.LeftParen, _) :: (Token.RightParen, _) :: r -> (
-      match parse_statement r with
-      | Ok (content, r) -> Ok (Ast.FunctionDefinition { id; content }, r)
-      | Error e -> Error e)
+  | (Token.Id id, _) :: (Token.LeftParen, _) :: (Token.RightParen, _) :: r ->
+      let* content, r = parse_statement r in
+      Ok (Ast.FunctionDefinition { id; content }, r)
   | (_, line) :: _ ->
       Error
         (Printf.sprintf
@@ -65,14 +63,12 @@ let parse_global_assignment rest =
 
 let rec aux tokens acc =
   match tokens with
-  | (Token.Global, _) :: r -> (
-      match parse_global_assignment r with
-      | Ok (statement, r) -> aux r (statement :: acc)
-      | Error e -> Error e)
-  | (Token.Fn, _) :: r -> (
-      match parse_function_definition r with
-      | Ok (statement, r) -> aux r (statement :: acc)
-      | Error e -> Error e)
+  | (Token.Global, _) :: r ->
+      let* statement, r = parse_global_assignment r in
+      aux r (statement :: acc)
+  | (Token.Fn, _) :: r ->
+      let* statement, r = parse_function_definition r in
+      aux r (statement :: acc)
   | [] -> Ok (List.rev acc)
   | (t, line) :: _ ->
       Error

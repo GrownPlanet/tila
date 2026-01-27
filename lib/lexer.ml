@@ -14,7 +14,7 @@ let match_keyword literal =
   | _ -> Token.Id literal
 
 let rec lex_all input pos line tokens =
-  if pos >= String.length input then List.rev tokens
+  if pos >= String.length input then Ok (List.rev tokens)
   else
     let char = String.get input pos in
     match char with
@@ -40,11 +40,11 @@ let rec lex_all input pos line tokens =
         let strlen = String.length string in
         let string = String.sub string 0 (strlen - 1) in
         if pos = String.length input then
-          failwith (Printf.sprintf "unclosed string literal on line %d" line)
+          Error (Printf.sprintf "unclosed string literal on line %d" line)
         else
           lex_all input (pos + 1) line ((Token.TString string, line) :: tokens)
     | _ ->
-        failwith
+        Error
           (Printf.sprintf "unexpected character '%c' on line %d" char line)
 
 let lex input = lex_all input 0 1 []

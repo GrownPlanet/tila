@@ -1,1 +1,1 @@
-val lex : string -> (Token.t * int) list
+val lex : string -> ((Token.t * int) list, string) result
