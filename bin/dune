@@ -1,4 +1,4 @@
 (executable
- (public_name tilang)
+ (public_name tila)
  (name main)
- (libraries tilang))
+ (libraries tila))

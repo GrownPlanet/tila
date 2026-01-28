@@ -1,4 +1,4 @@
-open Tilang
+open Tila
 
 let compile in_filename out_filename =
   let ( let* ) = Result.bind in
@@ -17,5 +17,5 @@ let () =
     let in_filename = Sys.argv.(1) in
     let out_filename = Sys.argv.(2) in
     match compile in_filename out_filename with
-    | Ok () -> ()
+    | Ok () -> Printf.printf "Done compiling. The code lives.\n"
     | Error e -> Printf.eprintf "error: %s\n" e
