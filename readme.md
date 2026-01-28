@@ -25,10 +25,10 @@ Short term:
 
 - [x] parse the program
 - [x] build an ast
-- [ ] generate the assembly
+- [x] generate the assembly
 - [x] output the assembly
 - [x] write a script to compile the assembly
-- [ ] test it!
+- [x] test it!
 - [ ] add more features
   - [ ] mutating variables
   - [ ] if/else statements

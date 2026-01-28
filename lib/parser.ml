@@ -43,8 +43,8 @@ and parse_block rest =
 let parse_function_definition rest =
   match rest with
   | (Id id, _) :: (LeftParen, _) :: (RightParen, _) :: r ->
-      let* content, r = parse_statement r in
-      Ok (Ast.FunctionDefinition { id; content }, r)
+      let* contents, r = parse_statement r in
+      Ok (Ast.FunctionDefinition { id; contents }, r)
   | (_, line) :: _ ->
       Error
         (Printf.sprintf

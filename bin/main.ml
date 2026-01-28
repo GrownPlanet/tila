@@ -7,7 +7,7 @@ let compile in_filename out_filename =
   (* List.iter (fun (t, _) -> Token.to_string t |> print_endline) tokens; *)
   let* ast = Parser.parse tokens in
   (* List.iter (fun s -> Ast.statement_to_string s |> print_endline) ast; *)
-  let asm = Compiler.compile ast in
+  let* asm = Compiler.compile ast in
   Ok (Out_channel.with_open_text out_filename (Spasm_ng_emitter.emit asm))
 
 let () =
