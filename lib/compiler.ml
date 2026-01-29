@@ -2,14 +2,16 @@ open Asm
 
 let ( let* ) = Result.bind
 
-(* difference list -> TODO: put in different file *)
+type dflist = Asm.t list -> Asm.t list
+
+let empty_dlist tail = [] @ tail
 let create_df init tail = init @ tail
 let join_df a b tail = a (b tail)
 
 type body = {
-  main_function : Asm.t list -> Asm.t list;
-  functions : Asm.t list -> Asm.t list;
-  globals : Asm.t list -> Asm.t list;
+  main_function : dflist option;
+  functions : dflist;
+  globals : dflist;
   labels : (string, int) Hashtbl.t;
   label_counter : int;
 }
@@ -57,8 +59,7 @@ let compile_func_def body id contents =
       (join_df (create_df [ Label label ]) contents)
       (create_df [ Return ])
   in
-  (* TODO: error on duplicate main function *)
-  if id = "main" then Ok { body with main_function = code }
+  if id = "main" then Ok { body with main_function = Some code }
   else Ok { body with functions = join_df body.functions code }
 
 let compile_glob_assig body id value =
@@ -85,28 +86,29 @@ let rec compile_all ast body =
 
 let compile ast =
   let header =
-   fun tail ->
-    [
-      NoList;
-      Include "ti83plus.inc";
-      List;
-      Org "userMem-2";
-      Db [ "t2ByteTok"; "tAsmCmp" ];
-    ]
-    @ tail
+    create_df
+      [
+        NoList;
+        Include "ti83plus.inc";
+        List;
+        Org "userMem-2";
+        Db [ "t2ByteTok"; "tAsmCmp" ];
+      ]
   in
   let empty_body =
     {
-      main_function = create_df [];
-      functions = create_df [];
-      globals = create_df [];
+      main_function = None;
+      functions = empty_dlist;
+      globals = empty_dlist;
       labels = Hashtbl.create 16;
       label_counter = 0;
     }
   in
-  (* TODO: error on emtpy main funcion *)
   let* body = compile_all ast empty_body in
-  let body =
-    body.globals |> join_df body.functions |> join_df body.main_function
+  let* main_function =
+    match body.main_function with
+    | Some f -> Ok f
+    | None -> Error "no 'main' function"
   in
+  let body = body.globals |> join_df body.functions |> join_df main_function in
   Ok (header (body [ End ]))

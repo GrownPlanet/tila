@@ -34,12 +34,13 @@ Short term:
   - [ ] if/else statements
   - [ ] for/while loops
   - [ ] math (+, -, >, <, ==, ...)
-  - [ ] sprites
+  - [ ] stack allocated sprites
   - [ ] variables
-  - [ ] more default functions: getkey, clearhome, ...
+  - [ ] more default functions: getkey, ...
   - [ ] *advanced* math (*, /, ...; this is more difficult to implement on the ti84)
 
 Long term:
 
 - [ ] output an executable instead of assembly
 - [ ] arguments for functions
+- [ ] asyncio multithreading
