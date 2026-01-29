@@ -43,6 +43,7 @@ let rec compile_statement body statement =
   match statement with
   | Ast.Block stmts -> compile_block body stmts (create_df [])
   | Ast.FunctionCall { id; args } -> compile_function_call body id args
+  | _ -> failwith "not implemented yet"
 
 and compile_block body statements acc =
   match statements with

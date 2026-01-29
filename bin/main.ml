@@ -6,7 +6,7 @@ let compile in_filename out_filename =
   let* tokens = Lexer.lex input in
   (* List.iter (fun (t, _) -> Token.to_string t |> print_endline) tokens; *)
   let* ast = Parser.parse tokens in
-  (* List.iter (fun s -> Ast.statement_to_string s |> print_endline) ast; *)
+  List.iter (fun s -> Ast.print_top_level_declaration s |> print_endline) ast;
   let* asm = Compiler.compile ast in
   Ok (Out_channel.with_open_text out_filename (Spasm_ng_emitter.emit asm))
 
@@ -18,4 +18,6 @@ let () =
     let out_filename = Sys.argv.(2) in
     match compile in_filename out_filename with
     | Ok () -> Printf.printf "Done compiling. The code lives.\n"
-    | Error e -> Printf.eprintf "error: %s\n" e
+    | Error e ->
+        Printf.eprintf "error: %s\n" e;
+        exit 1

@@ -7,6 +7,26 @@ let raise_parse_error token place line =
     (Printf.sprintf "unexpected '%s' in %s on line %d" (to_string token) place
        line)
 
+(* TODO: add support for chaining literals with () *)
+let parse_literal tokens =
+  match tokens with
+  | (TNumber num, _) :: r -> Ok (Ast.Literal (LNumber num), r)
+  | (TString str, _) :: r -> Ok (Ast.Literal (LString str), r)
+  | (Id id, _) :: r -> Ok (Ast.Id id, r)
+  | (t, line) :: _ -> raise_parse_error t "literal" line
+  | [] -> Error "unexpected end of file"
+
+let parse_comparison tokens =
+  let* left, r = parse_literal tokens in
+  match r with
+  | (EqualEqual, _) :: r ->
+    let* right, r = parse_literal r in
+    let opperator = Token.EqualEqual in
+    Ok (Ast.Binary { left; right; opperator }, r)
+  | _ -> Ok (left, r)
+
+let parse_expression = parse_comparison
+
 let parse_function_call_args rest =
   let rec aux rest acc =
     match rest with
@@ -25,20 +45,21 @@ let rec parse_statement tokens =
       let* args, r = parse_function_call_args r in
       Ok (Ast.FunctionCall { id; args }, r)
   | (LeftBrace, _) :: r ->
-      let* statements, r = parse_block r in
+      let* statements, r = parse_block r [] in
       Ok (Ast.Block statements, r)
+  | (If, _) :: r ->
+    let* case, r = parse_expression r in
+    let* value, r = parse_statement r in
+    Ok (Ast.If { case; value }, r)
   | (t, line) :: _ -> raise_parse_error t "statement" line
   | [] -> Error "unexpected end of file"
 
-and parse_block rest =
-  let rec aux rest acc =
-    match rest with
-    | (RightBrace, _) :: r -> Ok (List.rev acc, r)
-    | _ ->
-        let* statement, rest = parse_statement rest in
-        aux rest (statement :: acc)
-  in
-  aux rest []
+and parse_block rest acc =
+  match rest with
+  | (RightBrace, _) :: r -> Ok (List.rev acc, r)
+  | _ ->
+      let* statement, rest = parse_statement rest in
+      parse_block rest (statement :: acc)
 
 let parse_function_definition rest =
   match rest with

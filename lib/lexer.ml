@@ -9,12 +9,14 @@ let consume_while input pos pred =
 
 let peek input pos =
   if pos + 1 >= String.length input then None
-  else Some (pos, String.get input (pos + 1))
+  else Some ((pos + 1), String.get input (pos + 1))
 
 let match_keyword literal =
   match literal with
   | "fn" -> Token.Fn
   | "global" -> Token.Global
+  | "if" -> Token.If
+  | "else" -> Token.Else
   | _ -> Token.Id literal
 
 let rec lex_all input pos line tokens =
@@ -24,7 +26,11 @@ let rec lex_all input pos line tokens =
     match char with
     | '\n' -> lex_all input (pos + 1) (line + 1) tokens
     | ' ' | '\r' | '\t' -> lex_all input (pos + 1) line tokens
-    | '=' -> lex_all input (pos + 1) line ((Token.Equal, line) :: tokens)
+    | '=' -> (
+        match peek input pos with
+        | Some (pos, '=') ->
+            lex_all input (pos + 1) line ((Token.EqualEqual, line) :: tokens)
+        | _ -> lex_all input (pos + 1) line ((Token.Equal, line) :: tokens))
     | '{' -> lex_all input (pos + 1) line ((Token.LeftBrace, line) :: tokens)
     | '}' -> lex_all input (pos + 1) line ((Token.RightBrace, line) :: tokens)
     | '(' -> lex_all input (pos + 1) line ((Token.LeftParen, line) :: tokens)
@@ -32,7 +38,7 @@ let rec lex_all input pos line tokens =
     | '/' -> (
         match peek input pos with
         | Some (pos, '/') ->
-            let _, pos = consume_while input (pos + 1) (fun c -> c <> '\n') in
+            let _, pos = consume_while input pos (fun c -> c <> '\n') in
             lex_all input (pos + 1) (line + 1) tokens
         | _ -> Error "expected '/' after '/'")
     | 'a' .. 'z' | 'A' .. 'Z' ->
