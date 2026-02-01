@@ -66,7 +66,7 @@ let compile_expression body expression =
   | Ast.Binary _ ->
       Error "assigning variables to binary operations isn't supported yet"
 
-let compile_if_case body expression then_code =
+let compile_if_else_begin body expression =
   match expression with
   | Ast.Binary { left; right; opperator } -> (
       match opperator with
@@ -89,47 +89,30 @@ let compile_if_case body expression then_code =
                     Cp (A, Reg E);
                     Jr (Some NZ, else_label);
                   ];
-                then_code;
-                create_df [ Label else_label ];
               ]
           in
-          Ok (body, code)
+          Ok (body, code, else_label)
       | _ -> Error "expected comparison in if statement")
   | _ -> Error "expected comparison in if statement"
 
+let compile_if_case body expression then_code =
+  let* body, code, else_label = compile_if_else_begin body expression in
+  Ok (body, join_dfs [
+    code;
+    then_code;
+    create_df [ Label else_label ];
+  ])
+
 let compile_if_else_case body expression then_code else_code =
-  match expression with
-  | Ast.Binary { left; right; opperator } -> (
-      match opperator with
-      | Token.EqualEqual ->
-          let* body, else_label = next_blind_label body in
-          let* body, end_label = next_blind_label body in
-          let* body, left_code = compile_expression body left in
-          let* body, right_code = compile_expression body right in
-          let code =
-            join_dfs
-              [
-                left_code;
-                create_df [ Ex (De, Reg Hl) ];
-                right_code;
-                create_df
-                  [
-                    Ld (A, Reg H);
-                    Cp (A, Reg D);
-                    Jr (Some NZ, else_label);
-                    Ld (A, Reg L);
-                    Cp (A, Reg E);
-                    Jr (Some NZ, else_label);
-                  ];
-                then_code;
-                create_df [ Jr (None, end_label); Label else_label ];
-                else_code;
-                create_df [ Label end_label ];
-              ]
-          in
-          Ok (body, code)
-      | _ -> Error "expected comparison in if statement")
-  | _ -> Error "expected comparison in if statement"
+  let* body, code, else_label = compile_if_else_begin body expression in
+  let* body, end_label = next_blind_label body in
+  Ok (body, join_dfs [
+    code;
+    then_code;
+    create_df [ Jr (None, end_label); Label else_label ];
+    else_code;
+    create_df [ Label end_label ];
+  ])
 
 let rec compile_statement body statement =
   match statement with

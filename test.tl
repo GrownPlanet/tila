@@ -1,7 +1,9 @@
 // global declaration
-global is = "x is 42!"
-global isnt = "x isn't 42!"
+global is = "O42"
+global isnt = "X42"
+
 global x = 42
+global the_other_one = 10
 
 // main function
 fn main() {

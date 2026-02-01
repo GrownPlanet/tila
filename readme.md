@@ -33,6 +33,7 @@ Short term:
   - [ ] mutating variables
   - [x] if/else statements
     - [x] ==
+    - [ ] fix variables: they are 8bit instead of 16bit
     - [ ] >, <, >=, <=
   - [ ] for/while loops
   - [ ] math (+, -, >, <, ==, ...)
