@@ -8,7 +8,11 @@ type expression =
 type statement =
   | FunctionCall of { id : string; args : expression list }
   | Block of statement list
-  | If of { case : expression; value : statement }
+  | If of {
+      case : expression;
+      then_branch : statement;
+      else_branch : statement option;
+    }
 
 type top_level_definition =
   | FunctionDefinition of { id : string; contents : statement }
@@ -43,10 +47,15 @@ let rec statement_to_string statement =
           "" statements
       in
       Printf.sprintf "{ Block:%s }" statements_str
-  | If { case; value } ->
+  | If { case; then_branch; else_branch } ->
       let case_str = expression_to_string case in
-      let code_str = statement_to_string value in
-      Printf.sprintf "{ If %s %s }" case_str code_str
+      let then_str = statement_to_string then_branch in
+      let else_str =
+        match else_branch with
+        | None -> "None"
+        | Some s -> statement_to_string s
+      in
+      Printf.sprintf "{ If %s then %s else %s }" case_str then_str else_str
 
 let print_top_level_declaration decl =
   match decl with

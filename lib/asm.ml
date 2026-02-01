@@ -1,19 +1,5 @@
-type reg =
-  | A
-  | H
-  | L
-  | D
-  | E
-  | Hl
-  | De
-  | Z
-  | NZ
-
-type value =
-  | Reg of reg
-  | Id of string
-  | IdRef of string
-  | Lit of int
+type reg = A | H | L | D | E | Hl | De | Z | NZ
+type value = Reg of reg | Id of string | IdRef of string | Lit of int
 
 type t =
   | NoList

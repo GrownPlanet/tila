@@ -66,11 +66,12 @@ let compile_expression body expression =
   | Ast.Binary _ ->
       Error "assigning variables to binary operations isn't supported yet"
 
-let compile_case body expression then_code else_label =
+let compile_if_case body expression then_code =
   match expression with
   | Ast.Binary { left; right; opperator } -> (
       match opperator with
       | Token.EqualEqual ->
+          let* body, else_label = next_blind_label body in
           let* body, left_code = compile_expression body left in
           let* body, right_code = compile_expression body right in
           let code =
@@ -96,14 +97,51 @@ let compile_case body expression then_code else_label =
       | _ -> Error "expected comparison in if statement")
   | _ -> Error "expected comparison in if statement"
 
+let compile_if_else_case body expression then_code else_code =
+  match expression with
+  | Ast.Binary { left; right; opperator } -> (
+      match opperator with
+      | Token.EqualEqual ->
+          let* body, else_label = next_blind_label body in
+          let* body, end_label = next_blind_label body in
+          let* body, left_code = compile_expression body left in
+          let* body, right_code = compile_expression body right in
+          let code =
+            join_dfs
+              [
+                left_code;
+                create_df [ Ex (De, Reg Hl) ];
+                right_code;
+                create_df
+                  [
+                    Ld (A, Reg H);
+                    Cp (A, Reg D);
+                    Jr (Some NZ, else_label);
+                    Ld (A, Reg L);
+                    Cp (A, Reg E);
+                    Jr (Some NZ, else_label);
+                  ];
+                then_code;
+                create_df [ Jr (None, end_label); Label else_label ];
+                else_code;
+                create_df [ Label end_label ];
+              ]
+          in
+          Ok (body, code)
+      | _ -> Error "expected comparison in if statement")
+  | _ -> Error "expected comparison in if statement"
+
 let rec compile_statement body statement =
   match statement with
   | Ast.Block stmts -> compile_block body stmts (create_df [])
   | Ast.FunctionCall { id; args } -> compile_function_call body id args
-  | Ast.If { case; value } ->
-      let* body, then_code = compile_statement body value in
-      let* body, else_label = next_blind_label body in
-      compile_case body case then_code else_label
+  | Ast.If { case; then_branch; else_branch } ->
+      let* body, then_code = compile_statement body then_branch in
+      match else_branch with
+      | Some else_branch ->
+        let* body, else_code = compile_statement body else_branch in
+        compile_if_else_case body case then_code else_code
+      | None -> compile_if_case body case then_code
 
 and compile_block body statements acc =
   match statements with

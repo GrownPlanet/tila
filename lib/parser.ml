@@ -47,10 +47,14 @@ let rec parse_statement tokens =
   | (LeftBrace, _) :: r ->
       let* statements, r = parse_block r [] in
       Ok (Ast.Block statements, r)
-  | (If, _) :: r ->
+  | (If, _) :: r -> (
       let* case, r = parse_expression r in
-      let* value, r = parse_statement r in
-      Ok (Ast.If { case; value }, r)
+      let* then_branch, r = parse_statement r in
+      match r with
+      | (Else, _) :: r ->
+          let* else_branch, r = parse_statement r in
+          Ok (Ast.If { case; then_branch; else_branch = Some else_branch }, r)
+      | _ -> Ok (Ast.If { case; then_branch; else_branch = None }, r))
   | (t, line) :: _ -> raise_parse_error t "statement" line
   | [] -> Error "unexpected end of file"
 

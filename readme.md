@@ -31,7 +31,9 @@ Short term:
 - [x] test it!
 - [ ] add more features
   - [ ] mutating variables
-  - [ ] if/else statements
+  - [x] if/else statements
+    - [x] ==
+    - [ ] >, <, >=, <=
   - [ ] for/while loops
   - [ ] math (+, -, >, <, ==, ...)
   - [ ] stack allocated sprites

@@ -10,8 +10,7 @@ fn main() {
     
     if x == 42 {
         print(is)
+    } else {
+        print(isnt)
     }
-    // else {
-    //     print(isnt)
-    // }
 }
