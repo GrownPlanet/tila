@@ -18,14 +18,14 @@ global player = @{
 global message = "Hello world!"
 
 // functions have no input to keep the code efficient, and I am too lazy to implement parameters
-func move_player() {
+fn move_player() {
     if pressed(kUp) { y = y - 1 }
     if pressed(kDown) { y = y + 1 }
     if pressed(kLeft) { x = x - 1 }
     if pressed(kRight) { x = x + 1 }
 }
 
-func main() {
+fn main() {
     // local variables
     let running = 1
 

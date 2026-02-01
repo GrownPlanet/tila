@@ -6,7 +6,8 @@ type expression =
   | Binary of { left : expression; right : expression; opperator : Token.t }
 
 type statement =
-  | FunctionCall of { id : string; args : expression list } | Block of statement list
+  | FunctionCall of { id : string; args : expression list }
+  | Block of statement list
   | If of { case : expression; value : statement }
 
 type top_level_definition =
@@ -37,7 +38,9 @@ let rec statement_to_string statement =
       Printf.sprintf "{ FunctionCall: %s [%s] }" id args_str
   | Block statements ->
       let statements_str =
-        List.fold_left (fun acc s -> acc ^ " " ^ statement_to_string s) "" statements
+        List.fold_left
+          (fun acc s -> acc ^ " " ^ statement_to_string s)
+          "" statements
       in
       Printf.sprintf "{ Block:%s }" statements_str
   | If { case; value } ->
@@ -52,4 +55,4 @@ let print_top_level_declaration decl =
       Printf.sprintf "{ FunctionDefinition: %s %s }" id contents_str
   | GlobalAssignment { id; value } ->
       let value_str = literal_to_string value in
-      Printf.sprintf "{ GlobalAssignment: %s %s }" id value_str
+      Printf.sprintf "{ GlobalAssignment: %s = %s }" id value_str

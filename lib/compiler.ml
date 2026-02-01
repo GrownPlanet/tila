@@ -8,6 +8,9 @@ let empty_dlist tail = [] @ tail
 let create_df init tail = init @ tail
 let join_df a b tail = a (b tail)
 
+let rec join_dfs dfs tail =
+  match dfs with x :: r -> x (join_dfs r tail) | [] -> tail
+
 type body = {
   main_function : dflist option;
   functions : dflist;
@@ -25,6 +28,11 @@ let next_label body name =
       let body = { body with label_counter = body.label_counter + 1 } in
       Ok (body, label)
 
+let next_blind_label body =
+  let label = "Lb" ^ string_of_int body.label_counter in
+  let body = { body with label_counter = body.label_counter + 1 } in
+  Ok (body, label)
+
 let get_label body name =
   match Hashtbl.find_opt body.labels name with
   | Some l -> Ok ("Lb" ^ string_of_int l)
@@ -32,18 +40,70 @@ let get_label body name =
 
 let compile_function_call body id args =
   match (id, args) with
-  | "print", [ Ast.Id id ] ->
-      let* label = get_label body id in
+  | "print", [ Ast.Id arg ] ->
+      let* label = get_label body arg in
       Ok (body, create_df [ Ld (Hl, Id label); BCall "_PutS" ])
   | "goHome", [] -> Ok (body, create_df [ BCall "_HomeUp" ])
   | "clearLCD", [] -> Ok (body, create_df [ BCall "_ClrLCDFull" ])
-  | _ -> failwith "calling regular functions: not implemented yet"
+  | _, [] ->
+      let* label = get_label body id in
+      Ok (body, create_df [ Call label ])
+  | _ -> failwith "functions with arguments isn't implemented yet"
+
+(* compiles the literal into hl *)
+let compile_expression body expression =
+  match expression with
+  | Ast.Literal lit -> (
+      match lit with
+      | LNumber n -> Ok (body, create_df [ Ld (Hl, Lit n) ])
+      | LString _ ->
+          Error
+            "using string literals isn't supported yet, please use a global \
+             variable")
+  | Ast.Id id ->
+      let* label = get_label body id in
+      Ok (body, create_df [ Ld (Hl, IdRef label) ])
+  | Ast.Binary _ ->
+      Error "assigning variables to binary operations isn't supported yet"
+
+let compile_case body expression then_code else_label =
+  match expression with
+  | Ast.Binary { left; right; opperator } -> (
+      match opperator with
+      | Token.EqualEqual ->
+          let* body, left_code = compile_expression body left in
+          let* body, right_code = compile_expression body right in
+          let code =
+            join_dfs
+              [
+                left_code;
+                create_df [ Ex (De, Reg Hl) ];
+                right_code;
+                create_df
+                  [
+                    Ld (A, Reg H);
+                    Cp (A, Reg D);
+                    Jr (Some NZ, else_label);
+                    Ld (A, Reg L);
+                    Cp (A, Reg E);
+                    Jr (Some NZ, else_label);
+                  ];
+                then_code;
+                create_df [ Label else_label ];
+              ]
+          in
+          Ok (body, code)
+      | _ -> Error "expected comparison in if statement")
+  | _ -> Error "expected comparison in if statement"
 
 let rec compile_statement body statement =
   match statement with
   | Ast.Block stmts -> compile_block body stmts (create_df [])
   | Ast.FunctionCall { id; args } -> compile_function_call body id args
-  | _ -> failwith "not implemented yet"
+  | Ast.If { case; value } ->
+      let* body, then_code = compile_statement body value in
+      let* body, else_label = next_blind_label body in
+      compile_case body case then_code else_label
 
 and compile_block body statements acc =
   match statements with
@@ -111,5 +171,5 @@ let compile ast =
     | Some f -> Ok f
     | None -> Error "no 'main' function"
   in
-  let body = body.globals |> join_df body.functions |> join_df main_function in
+  let body = join_dfs [ main_function; body.functions; body.globals ] in
   Ok (header (body [ End ]))

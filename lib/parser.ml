@@ -20,9 +20,9 @@ let parse_comparison tokens =
   let* left, r = parse_literal tokens in
   match r with
   | (EqualEqual, _) :: r ->
-    let* right, r = parse_literal r in
-    let opperator = Token.EqualEqual in
-    Ok (Ast.Binary { left; right; opperator }, r)
+      let* right, r = parse_literal r in
+      let opperator = Token.EqualEqual in
+      Ok (Ast.Binary { left; right; opperator }, r)
   | _ -> Ok (left, r)
 
 let parse_expression = parse_comparison
@@ -48,9 +48,9 @@ let rec parse_statement tokens =
       let* statements, r = parse_block r [] in
       Ok (Ast.Block statements, r)
   | (If, _) :: r ->
-    let* case, r = parse_expression r in
-    let* value, r = parse_statement r in
-    Ok (Ast.If { case; value }, r)
+      let* case, r = parse_expression r in
+      let* value, r = parse_statement r in
+      Ok (Ast.If { case; value }, r)
   | (t, line) :: _ -> raise_parse_error t "statement" line
   | [] -> Error "unexpected end of file"
 

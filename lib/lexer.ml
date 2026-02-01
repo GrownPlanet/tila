@@ -9,7 +9,7 @@ let consume_while input pos pred =
 
 let peek input pos =
   if pos + 1 >= String.length input then None
-  else Some ((pos + 1), String.get input (pos + 1))
+  else Some (pos + 1, String.get input (pos + 1))
 
 let match_keyword literal =
   match literal with
@@ -44,7 +44,7 @@ let rec lex_all input pos line tokens =
     | 'a' .. 'z' | 'A' .. 'Z' ->
         let literal, pos =
           consume_while input pos (function
-            | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' -> true
+            | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true
             | _ -> false)
         in
         let token = match_keyword literal in
