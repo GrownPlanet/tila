@@ -39,6 +39,8 @@ let render instruction =
       | None -> "  jr " ^ label)
   | Cp (a, b) -> "  cp " ^ render_reg a ^ ", " ^ render_value b
   | Ex (a, b) -> "  ex " ^ render_reg a ^ ", " ^ render_value b
+  | Sbc (a, b) -> "  sbc " ^ render_reg a ^ ", " ^ render_value b
+  | Or s -> "  or " ^ render_reg s
 
 let emit asm out_channel =
   List.map render asm |> String.concat "\n" |> Printf.fprintf out_channel "%s\n"

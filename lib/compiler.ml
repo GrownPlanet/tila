@@ -89,15 +89,7 @@ let compile_comparison_16b left_code right_code else_label case =
     [
       left_code;
       right_code;
-      create_df
-        [
-          Ld (A, Reg H);
-          Cp (A, Reg D);
-          Jr (Some case, else_label);
-          Ld (A, Reg L);
-          Cp (A, Reg E);
-          Jr (Some case, else_label);
-        ];
+      create_df [ Or A; Sbc (Hl, Reg De); Jr (Some case, else_label) ];
     ]
 
 let compile_condition body expression =

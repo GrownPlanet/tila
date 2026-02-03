@@ -16,3 +16,5 @@ type t =
   | Ld of reg * value
   | Cp of reg * value
   | Ex of reg * value
+  | Sbc of reg * value
+  | Or of reg
