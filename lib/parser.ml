@@ -80,10 +80,19 @@ let parse_function_definition rest =
 
 let parse_global_assignment rest =
   match rest with
-  | (Id id, _) :: (Equal, _) :: (TString value, _) :: r ->
-      Ok (Ast.GlobalAssignment { id; value = Ast.LString value }, r)
-  | (Id id, _) :: (Equal, _) :: (TNumber value, _) :: r ->
-      Ok (Ast.GlobalAssignment { id; value = Ast.LNumber value }, r)
+  | (StringType, _) :: (Id id, _) :: (Equal, _) :: (TString value, _) :: r ->
+      Ok
+        ( Ast.GlobalAssignment
+            { id; value = Ast.LString value; typ = Ast.TString },
+          r )
+  | (U8Type, _) :: (Id id, _) :: (Equal, _) :: (TNumber value, _) :: r ->
+      Ok
+        ( Ast.GlobalAssignment { id; value = Ast.LNumber value; typ = Ast.TU8 },
+          r )
+  | (U16Type, _) :: (Id id, _) :: (Equal, _) :: (TNumber value, _) :: r ->
+      Ok
+        ( Ast.GlobalAssignment { id; value = Ast.LNumber value; typ = Ast.TU16 },
+          r )
   | (_, line) :: _ ->
       Error (Printf.sprintf "invalid global assignment on line %d" line)
   | [] -> Error "unexpected end of file"

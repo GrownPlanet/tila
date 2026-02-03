@@ -17,6 +17,9 @@ let match_keyword literal =
   | "global" -> Token.Global
   | "if" -> Token.If
   | "else" -> Token.Else
+  | "string" -> Token.StringType
+  | "u8" -> Token.U8Type
+  | "u16" -> Token.U16Type
   | _ -> Token.Id literal
 
 let rec lex_all input pos line tokens =

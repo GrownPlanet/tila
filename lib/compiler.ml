@@ -97,34 +97,33 @@ let compile_if_else_begin body expression =
 
 let compile_if_case body expression then_code =
   let* body, code, else_label = compile_if_else_begin body expression in
-  Ok (body, join_dfs [
-    code;
-    then_code;
-    create_df [ Label else_label ];
-  ])
+  Ok (body, join_dfs [ code; then_code; create_df [ Label else_label ] ])
 
 let compile_if_else_case body expression then_code else_code =
   let* body, code, else_label = compile_if_else_begin body expression in
   let* body, end_label = next_blind_label body in
-  Ok (body, join_dfs [
-    code;
-    then_code;
-    create_df [ Jr (None, end_label); Label else_label ];
-    else_code;
-    create_df [ Label end_label ];
-  ])
+  Ok
+    ( body,
+      join_dfs
+        [
+          code;
+          then_code;
+          create_df [ Jr (None, end_label); Label else_label ];
+          else_code;
+          create_df [ Label end_label ];
+        ] )
 
 let rec compile_statement body statement =
   match statement with
   | Ast.Block stmts -> compile_block body stmts (create_df [])
   | Ast.FunctionCall { id; args } -> compile_function_call body id args
-  | Ast.If { case; then_branch; else_branch } ->
+  | Ast.If { case; then_branch; else_branch } -> (
       let* body, then_code = compile_statement body then_branch in
       match else_branch with
       | Some else_branch ->
-        let* body, else_code = compile_statement body else_branch in
-        compile_if_else_case body case then_code else_code
-      | None -> compile_if_case body case then_code
+          let* body, else_code = compile_statement body else_branch in
+          compile_if_else_case body case then_code else_code
+      | None -> compile_if_case body case then_code)
 
 and compile_block body statements acc =
   match statements with
@@ -156,7 +155,9 @@ let compile_glob_assig body id value =
 let compile_top_def body node =
   match node with
   | Ast.FunctionDefinition { id; contents } -> compile_func_def body id contents
-  | Ast.GlobalAssignment { id; value } -> compile_glob_assig body id value
+  | Ast.GlobalAssignment { id; value; typ } ->
+    let _ = typ in
+    compile_glob_assig body id value
 
 let rec compile_all ast body =
   match ast with

@@ -4,6 +4,9 @@ type t =
   | Global
   | If
   | Else
+  | StringType
+  | U8Type
+  | U16Type
   (* literals *)
   | TNumber of int
   | TString of string
@@ -36,3 +39,6 @@ let to_string token =
   | Minus -> "Minus"
   | Equal -> "Equal"
   | EqualEqual -> "EqualEqual"
+  | StringType -> "String"
+  | U8Type -> "u8"
+  | U16Type -> "u16"
