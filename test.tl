@@ -1,8 +1,8 @@
 // global declaration
-global string is = "O42"
-global string isnt = "X42"
+global string is = "O42 "
+global string isnt = "X42 "
 
-global u8 x = 42
+global u16 x = 42
 global u16 the_other_one = 10
 
 fn do_the_printing() {
@@ -16,7 +16,8 @@ fn main() {
     
     if x == 42 {
         do_the_printing()
-    } else {
-        print(isnt)
     }
+
+    if the_other_one == 11 do_the_printing()
+    else print(isnt)
 }

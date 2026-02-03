@@ -3,6 +3,7 @@ open Asm
 let render_reg reg =
   match reg with
   | A -> "a"
+  | B -> "b"
   | H -> "h"
   | L -> "l"
   | D -> "d"

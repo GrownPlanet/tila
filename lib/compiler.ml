@@ -51,30 +51,43 @@ let compile_function_call body id args =
       if typ <> Ast.TVoid then
         Error (Printf.sprintf "label '%s' not callable" id)
       else Ok (body, create_df [ Call label ])
-  | _ -> failwith "functions with arguments isn't implemented yet"
+  | _ -> Error "functions with arguments aren't implemented yet"
 
 (* compiles the literal into hl or a, depending on the input *)
 let compile_expression body expression =
   match expression with
   | Ast.Literal lit -> (
       match lit with
-      | LNumber n -> Ok (body, create_df [ Ld (Hl, Lit n) ])
+      | LNumber n ->
+          if 0 <= n && n <= 255 then
+            Ok (body, create_df [ Ld (A, Lit n) ], Ast.TU8)
+          else if 256 <= n && n <= 65535 then
+            Ok (body, create_df [ Ld (Hl, Lit n) ], Ast.TU8)
+          else Error "number out of range (16 bit)"
       | LString _ ->
           Error
             "using string literals isn't supported yet, please use a global \
              variable")
-  | Ast.Id id ->
-      (* TODO: figure out what to do here *)
-      let* label, _typ = get_label body id in
-      Ok (body, create_df [ Ld (Hl, IdRef label) ])
+  | Ast.Id id -> (
+      let* label, typ = get_label body id in
+      match typ with
+      | Ast.TU8 -> Ok (body, create_df [ Ld (A, IdRef label) ], typ)
+      | _ -> Ok (body, create_df [ Ld (Hl, IdRef label) ], typ))
   | Ast.Binary _ ->
       Error "assigning variables to binary operations isn't supported yet"
+
+let compile_comparison_8b left_code right_code else_label case =
+  join_dfs
+    [
+      left_code;
+      right_code;
+      create_df [ Cp (A, Reg B); Jr (Some case, else_label) ];
+    ]
 
 let compile_comparison_16b left_code right_code else_label case =
   join_dfs
     [
       left_code;
-      create_df [ Ex (De, Reg Hl) ];
       right_code;
       create_df
         [
@@ -91,11 +104,35 @@ let compile_condition body expression =
   match expression with
   | Ast.Binary { left; right; opperator } -> (
       let* body, else_label = next_blind_label body in
-      let* body, left_code = compile_expression body left in
-      let* body, right_code = compile_expression body right in
+      let* body, left_code, ltyp = compile_expression body left in
+      let* body, right_code, rtyp = compile_expression body right in
+      let* left_code, right_code, compile_func =
+        match (ltyp, rtyp) with
+        | Ast.TU8, Ast.TU8 ->
+            Ok
+              ( join_df left_code (create_df [ Ld (B, Reg A) ]),
+                right_code,
+                compile_comparison_8b )
+        | Ast.TU16, Ast.TU16 ->
+            Ok
+              ( join_df left_code (create_df [ Ex (De, Reg Hl) ]),
+                right_code,
+                compile_comparison_16b )
+        | Ast.TU8, Ast.TU16 ->
+            Ok
+              ( join_df left_code (create_df [ Ld (D, Lit 0); Ld (E, Reg A) ]),
+                right_code,
+                compile_comparison_16b )
+        | Ast.TU16, Ast.TU8 ->
+            Ok
+              ( join_df left_code (create_df [ Ex (De, Reg Hl) ]),
+                join_df right_code (create_df [ Ld (H, Lit 0); Ld (L, Reg A) ]),
+                compile_comparison_16b )
+        | _ -> Error "invalid argument in binary expression"
+      in
       match opperator with
       | Token.EqualEqual ->
-          let code = compile_comparison_16b left_code right_code else_label NZ in
+          let code = compile_func left_code right_code else_label NZ in
           Ok (body, code, else_label)
       | _ -> Error "expected comparison in if statement")
   | _ -> Error "expected comparison in if statement"

@@ -1,4 +1,4 @@
-type reg = A | H | L | D | E | Hl | De | Z | NZ
+type reg = A | B | H | L | D | E | Hl | De | Z | NZ
 type value = Reg of reg | Id of string | IdRef of string | Lit of int
 
 type t =
