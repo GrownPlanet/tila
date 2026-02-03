@@ -11,8 +11,8 @@ fn do_the_printing() {
 
 // main function
 fn main() {
-    goHome()
-    clearLCD()
+    go_home()
+    clear_lcd()
     
     if x == 42 {
         do_the_printing()

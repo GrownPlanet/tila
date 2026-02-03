@@ -1,11 +1,10 @@
 let consume_while input pos pred =
   let len = String.length input in
-  let rec aux i acc =
-    if i < len && pred (String.get input i) then
-      aux (i + 1) (acc ^ String.make 1 (String.get input i))
-    else (acc, i)
+  let rec aux i =
+    if i < len && pred (String.get input i) then aux (i + 1)
+    else (String.sub input pos (i - pos), i)
   in
-  aux pos ""
+  aux pos
 
 let peek input pos =
   if pos + 1 >= String.length input then None
@@ -41,10 +40,10 @@ let rec lex_all input pos line tokens =
     | '/' -> (
         match peek input pos with
         | Some (pos, '/') ->
-            let _, pos = consume_while input pos (fun c -> c <> '\n') in
+            let _, pos = consume_while input (pos + 1) (fun c -> c <> '\n') in
             lex_all input (pos + 1) (line + 1) tokens
         | _ -> Error "expected '/' after '/'")
-    | 'a' .. 'z' | 'A' .. 'Z' ->
+    | 'a' .. 'z' | 'A' .. 'Z' | '_' ->
         let literal, pos =
           consume_while input pos (function
             | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> true

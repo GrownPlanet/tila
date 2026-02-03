@@ -30,8 +30,8 @@ fn main() {
     u8 running = 1
 
     // calling built-in functions
-    clearLCD()
-    goHome()
+    clear_lcd()
+    go_home()
 
     // built-in functions
     print(message)
@@ -44,5 +44,5 @@ fn main() {
         draw_sprite(player, x, y)
     }
 
-    clearLCD()
+    clear_lcd()
 }

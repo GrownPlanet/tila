@@ -44,8 +44,8 @@ let compile_function_call body id args =
       let* label, typ = get_label body arg in
       if typ <> Ast.TString then Error "'print' expectss tring as input"
       else Ok (body, create_df [ Ld (Hl, Id label); BCall "_PutS" ])
-  | "goHome", [] -> Ok (body, create_df [ BCall "_HomeUp" ])
-  | "clearLCD", [] -> Ok (body, create_df [ BCall "_ClrLCDFull" ])
+  | "go_home", [] -> Ok (body, create_df [ BCall "_HomeUp" ])
+  | "clear_lcd", [] -> Ok (body, create_df [ BCall "_ClrLCDFull" ])
   | _, [] ->
       let* label, typ = get_label body id in
       if typ <> Ast.TVoid then

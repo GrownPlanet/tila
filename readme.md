@@ -17,9 +17,29 @@ Requirements:
 
 To build: `dune build`
 
-To run: `dune exec tila [program]`, `test.tp` is a small reference program you can use.
+To run: `dune exec tila [program] [output.s]`, `test.tp` is a small reference program you can use. You need to use spasm-ng to compile the generated assembly to a 8xp file (example: `spasm out.s out.8xp`).
 
-## todo
+## Usage
+
+The language is still in relatively early stages, you can see the things I want to implement in `reference.tl`. The currently existing features are outlined below. Keep in mind that this language has no semicolons.
+
+You can use comments using `//`.
+
+You can create a global variable using `global [type] [name] = [value]`. The types are `string`, `u8`, and `u16`. For example: `global u16 x = 140`.
+
+You can create a function using `fn [name]() { ... code ... }`. Arguments aren't supported yet, so you will need to use global variables for now. The `main` function is the starting point for the program.
+
+You can call a function using `[name]()`.
+
+You can use conditionals using `if [expression] { ... code ... }` with an optional `else { ... code ... }`. For now you can check for equality.
+
+There are a few built in functions:
+
+1. `print([string variable])`
+2. `go_home()` put the cursor for text printing on 0, 0
+3. `clear_lcd()` clear the lcd
+
+## Todo
 
 Short term:
 
