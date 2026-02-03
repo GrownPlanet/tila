@@ -1,4 +1,4 @@
-type typ = TU8 | TU16 | TString
+type typ = TU8 | TU16 | TString | TVoid
 type literal = LNumber of int | LString of string
 
 type expression =
@@ -26,7 +26,11 @@ let literal_to_string literal =
   | LString s -> Printf.sprintf "\"%s\"" s
 
 let typ_to_str typ =
-  match typ with TU8 -> "u8" | TU16 -> "u16" | TString -> "string"
+  match typ with
+  | TU8 -> "u8"
+  | TU16 -> "u16"
+  | TString -> "string"
+  | TVoid -> "void"
 
 let rec expression_to_string expression =
   match expression with

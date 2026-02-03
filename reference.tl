@@ -1,9 +1,9 @@
 // global variables
-global x = 0
-global y = 0
+global u8 x = 0
+global u16 y = 0
 
 // 8x8 sprite
-global player = @{
+global sprite8x8 player = {
     ..####..,
     .######.,
     ##.##.##,
@@ -15,7 +15,7 @@ global player = @{
 }
 
 // strings can only be global
-global message = "Hello world!"
+global string message = "Hello world!"
 
 // functions have no input to keep the code efficient, and I am too lazy to implement parameters
 fn move_player() {
@@ -27,14 +27,14 @@ fn move_player() {
 
 fn main() {
     // local variables
-    let running = 1
+    u8 running = 1
+
+    // calling built-in functions
+    clearLCD()
+    goHome()
 
     // built-in functions
     print(message)
-
-    sleep(1000) // 1 second
-    clearLCD()
-    goHome()
 
     while running {
         move_player()

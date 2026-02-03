@@ -15,16 +15,16 @@ type body = {
   main_function : dflist option;
   functions : dflist;
   globals : dflist;
-  labels : (string, int) Hashtbl.t;
+  labels : (string, int * Ast.typ) Hashtbl.t;
   label_counter : int;
 }
 
-let next_label body name =
+let next_label body name typ =
   match Hashtbl.find_opt body.labels name with
   | Some _ -> Error (Printf.sprintf "identifier '%s' already exists" name)
   | None ->
       let label = "Lb" ^ string_of_int body.label_counter in
-      Hashtbl.add body.labels name body.label_counter;
+      Hashtbl.add body.labels name (body.label_counter, typ);
       let body = { body with label_counter = body.label_counter + 1 } in
       Ok (body, label)
 
@@ -35,22 +35,25 @@ let next_blind_label body =
 
 let get_label body name =
   match Hashtbl.find_opt body.labels name with
-  | Some l -> Ok ("Lb" ^ string_of_int l)
+  | Some (l, t) -> Ok ("Lb" ^ string_of_int l, t)
   | None -> Error (Printf.sprintf "could not find identifier '%s'" name)
 
 let compile_function_call body id args =
   match (id, args) with
   | "print", [ Ast.Id arg ] ->
-      let* label = get_label body arg in
-      Ok (body, create_df [ Ld (Hl, Id label); BCall "_PutS" ])
+      let* label, typ = get_label body arg in
+      if typ <> Ast.TString then Error "'print' expectss tring as input"
+      else Ok (body, create_df [ Ld (Hl, Id label); BCall "_PutS" ])
   | "goHome", [] -> Ok (body, create_df [ BCall "_HomeUp" ])
   | "clearLCD", [] -> Ok (body, create_df [ BCall "_ClrLCDFull" ])
   | _, [] ->
-      let* label = get_label body id in
-      Ok (body, create_df [ Call label ])
+      let* label, typ = get_label body id in
+      if typ <> Ast.TVoid then
+        Error (Printf.sprintf "label '%s' not callable" id)
+      else Ok (body, create_df [ Call label ])
   | _ -> failwith "functions with arguments isn't implemented yet"
 
-(* compiles the literal into hl *)
+(* compiles the literal into hl or a, depending on the input *)
 let compile_expression body expression =
   match expression with
   | Ast.Literal lit -> (
@@ -61,46 +64,48 @@ let compile_expression body expression =
             "using string literals isn't supported yet, please use a global \
              variable")
   | Ast.Id id ->
-      let* label = get_label body id in
+      (* TODO: figure out what to do here *)
+      let* label, _typ = get_label body id in
       Ok (body, create_df [ Ld (Hl, IdRef label) ])
   | Ast.Binary _ ->
       Error "assigning variables to binary operations isn't supported yet"
 
-let compile_if_else_begin body expression =
+let compile_comparison_16b left_code right_code else_label case =
+  join_dfs
+    [
+      left_code;
+      create_df [ Ex (De, Reg Hl) ];
+      right_code;
+      create_df
+        [
+          Ld (A, Reg H);
+          Cp (A, Reg D);
+          Jr (Some case, else_label);
+          Ld (A, Reg L);
+          Cp (A, Reg E);
+          Jr (Some case, else_label);
+        ];
+    ]
+
+let compile_condition body expression =
   match expression with
   | Ast.Binary { left; right; opperator } -> (
+      let* body, else_label = next_blind_label body in
+      let* body, left_code = compile_expression body left in
+      let* body, right_code = compile_expression body right in
       match opperator with
       | Token.EqualEqual ->
-          let* body, else_label = next_blind_label body in
-          let* body, left_code = compile_expression body left in
-          let* body, right_code = compile_expression body right in
-          let code =
-            join_dfs
-              [
-                left_code;
-                create_df [ Ex (De, Reg Hl) ];
-                right_code;
-                create_df
-                  [
-                    Ld (A, Reg H);
-                    Cp (A, Reg D);
-                    Jr (Some NZ, else_label);
-                    Ld (A, Reg L);
-                    Cp (A, Reg E);
-                    Jr (Some NZ, else_label);
-                  ];
-              ]
-          in
+          let code = compile_comparison_16b left_code right_code else_label NZ in
           Ok (body, code, else_label)
       | _ -> Error "expected comparison in if statement")
   | _ -> Error "expected comparison in if statement"
 
-let compile_if_case body expression then_code =
-  let* body, code, else_label = compile_if_else_begin body expression in
+let compile_if body expression then_code =
+  let* body, code, else_label = compile_condition body expression in
   Ok (body, join_dfs [ code; then_code; create_df [ Label else_label ] ])
 
-let compile_if_else_case body expression then_code else_code =
-  let* body, code, else_label = compile_if_else_begin body expression in
+let compile_if_else body expression then_code else_code =
+  let* body, code, else_label = compile_condition body expression in
   let* body, end_label = next_blind_label body in
   Ok
     ( body,
@@ -122,8 +127,8 @@ let rec compile_statement body statement =
       match else_branch with
       | Some else_branch ->
           let* body, else_code = compile_statement body else_branch in
-          compile_if_else_case body case then_code else_code
-      | None -> compile_if_case body case then_code)
+          compile_if_else body case then_code else_code
+      | None -> compile_if body case then_code)
 
 and compile_block body statements acc =
   match statements with
@@ -133,7 +138,7 @@ and compile_block body statements acc =
       compile_block body rest (join_df acc code)
 
 let compile_func_def body id contents =
-  let* body, label = next_label body id in
+  let* body, label = next_label body id Ast.TVoid in
   let* body, contents = compile_statement body contents in
   let code =
     join_df
@@ -143,12 +148,25 @@ let compile_func_def body id contents =
   if id = "main" then Ok { body with main_function = Some code }
   else Ok { body with functions = join_df body.functions code }
 
-let compile_glob_assig body id value =
-  let* body, label = next_label body id in
-  let value =
+let split_u16 n = [ 255 land n; n lsr 8 ]
+
+let compile_glob_assig body id value typ =
+  let* body, label = next_label body id typ in
+  let* value =
     match value with
-    | Ast.LNumber n -> create_df [ Label label; Db [ string_of_int n ] ]
-    | Ast.LString s -> create_df [ Label label; Db [ "\"" ^ s ^ "\""; "0" ] ]
+    | Ast.LString s ->
+        Ok (create_df [ Label label; Db [ "\"" ^ s ^ "\""; "0" ] ])
+    | Ast.LNumber n -> (
+        match typ with
+        | Ast.TU8 ->
+            if n > 255 then Error "u8 assignment out of range"
+            else Ok (create_df [ Label label; Db [ string_of_int n ] ])
+        | Ast.TU16 ->
+            if n > 65535 then Error "u16 assignment out of range"
+            else
+              let bytes = List.map string_of_int (split_u16 n) in
+              Ok (create_df [ Label label; Db bytes ])
+        | _ -> Error "internal: impossible type for number")
   in
   Ok { body with globals = join_df body.globals value }
 
@@ -156,8 +174,7 @@ let compile_top_def body node =
   match node with
   | Ast.FunctionDefinition { id; contents } -> compile_func_def body id contents
   | Ast.GlobalAssignment { id; value; typ } ->
-    let _ = typ in
-    compile_glob_assig body id value
+      compile_glob_assig body id value typ
 
 let rec compile_all ast body =
   match ast with
