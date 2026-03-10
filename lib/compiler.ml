@@ -94,7 +94,7 @@ let compile_comparison_16b left_code right_code else_label case =
 
 let compile_condition body expression =
   match expression with
-  | Ast.Binary { left; right; opperator } -> (
+  | Ast.Binary { left; right; operator } -> (
       let* body, else_label = next_blind_label body in
       let* body, left_code, ltyp = compile_expression body left in
       let* body, right_code, rtyp = compile_expression body right in
@@ -122,7 +122,7 @@ let compile_condition body expression =
                 compile_comparison_16b )
         | _ -> Error "invalid argument in binary expression"
       in
-      match opperator with
+      match operator with
       | Token.EqualEqual ->
           let code = compile_func left_code right_code else_label NZ in
           Ok (body, code, else_label)

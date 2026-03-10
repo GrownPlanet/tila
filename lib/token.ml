@@ -16,7 +16,7 @@ type t =
   | RightParen
   | LeftBrace
   | RightBrace
-  (* opperators *)
+  (* operators *)
   | Plus
   | Minus
   | Equal

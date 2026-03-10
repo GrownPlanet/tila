@@ -4,7 +4,7 @@ type literal = LNumber of int | LString of string
 type expression =
   | Literal of literal
   | Id of string
-  | Binary of { left : expression; right : expression; opperator : Token.t }
+  | Binary of { left : expression; right : expression; operator : Token.t }
 
 type statement =
   | FunctionCall of { id : string; args : expression list }
@@ -36,9 +36,9 @@ let rec expression_to_string expression =
   match expression with
   | Literal lit -> Printf.sprintf "(Lit: %s)" (literal_to_string lit)
   | Id s -> Printf.sprintf "(Id: %s)" s
-  | Binary { left; right; opperator } ->
+  | Binary { left; right; operator } ->
       Printf.sprintf "(%s %s %s)"
-        (Token.to_string opperator)
+        (Token.to_string operator)
         (expression_to_string left)
         (expression_to_string right)
 

@@ -21,8 +21,8 @@ let parse_comparison tokens =
   match r with
   | (EqualEqual, _) :: r ->
       let* right, r = parse_literal r in
-      let opperator = Token.EqualEqual in
-      Ok (Ast.Binary { left; right; opperator }, r)
+      let operator = Token.EqualEqual in
+      Ok (Ast.Binary { left; right; operator }, r)
   | _ -> Ok (left, r)
 
 let parse_expression = parse_comparison
